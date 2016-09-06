@@ -23,6 +23,9 @@ Parameter Output : Stream TD.
 
 
 Open Scope R_scope.
+           (*increasing time moments*)
+Axiom Inc_T : forall T: Stream TD,
+  PrL (hd T)  < PrL (hd (tl T)).
            (*the judgement about time*)
 Definition Teq(s1 s2:Stream TD) :Prop :=
   forall n:nat, PrL(Str_nth n s1) = PrL(Str_nth n s2).
@@ -71,7 +74,7 @@ Axiom AsyncDrain_coind:
   (
     (   (PrL(hd Input1)  <  PrL (hd Input2))  /\
       AsyncDrain (tl Input1) Input2        )
-    \/
+    /\
     (   (PrL(hd Input1)  >  PrL (hd Input2))  /\
       AsyncDrain Input1 (tl Input2)        )
   ).
@@ -89,28 +92,24 @@ Axiom LossySync_coind:
 
 
 (*=============Operators============*)
-Definition xor(a b: Prop) :=
-  (a \/ b) /\ ~(a /\ b).
 Parameter merge:
 Stream TD -> Stream TD ->Stream TD -> Prop.
 Axiom merge_coind:
   forall s1 s2 s3:Stream TD, 
-  merge s1 s2 s3->
+  merge s1 s2 s3->(
+  ~(PrL(hd s1) = PrL(hd s2)) 
+  /\
   (
-  (   (PrL(hd s1) < PrL(hd s2))  ->
-      ( (hd s3 = hd s1)  /\ merge (tl s1) s2 (tl s3) )   )
-  /\
-  (   (PrL(hd s1) > PrL(hd s2))    ->
-      ( (hd s3 = hd s2)  /\ merge s1 (tl s2) (tl s3))    )
-  /\
-  (   (PrL(hd s1) = PrL(hd s2))    ->
-      xor  ((hd s3 = hd s1)  /\ merge (tl s1) s2 (tl s3)) ((hd s3 = hd s2)  /\ merge s1 (tl s2) (tl s3)) 
+    (   (PrL(hd s1) < PrL(hd s2))  ->
+       ( (hd s3 = hd s1)  /\ merge (tl s1) s2 (tl s3) )   )
+    /\
+    (   (PrL(hd s1) > PrL(hd s2))    ->
+       ( (hd s3 = hd s2)  /\ merge s1 (tl s2) (tl s3))    )
   )
   ).
 
-
 (*===========examples============*)
-Variable A B C D E F G C1 C2 T S:Stream TD.
+Variable A B C D E F G C1 C2 T S :Stream TD.
 (*===============================*)
                     (*example 1*)
 (*===============================*)
@@ -212,13 +211,7 @@ End Alt.
                     (*example 3*)
 (*===============================*)
 Lemma Eq:forall A B:Stream TD,
-  Sync A B -> A=B  .
-Proof.
-admit.
-Qed.
-
-Lemma Eq_self:forall A:Stream TD,
-   Sync A A <-> A=A .
+  A=B <->  Sync A B.
 Proof.
 admit.
 Qed.
@@ -240,7 +233,7 @@ exists E.
 
 split.
 rewrite H0.
-apply Eq_self.
+apply Eq.
 reflexivity.
 
 split.
@@ -345,10 +338,9 @@ exists G.
 
 split.
 destruct H0.
-rewrite H0.
-apply Eq_self.
+apply Eq.
 symmetry.
-auto.
+assumption.
 
 split.
 destruct H.
